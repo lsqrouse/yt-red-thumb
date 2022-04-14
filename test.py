@@ -103,7 +103,7 @@ def test():
     print("got stack")
     cv2.imshow("result.png", imgStack)
     print("showing stack")
-    # kernel = np.ones((3, 3))
+    # kernel =  np.ones((3, 3))
     # img_dilate = cv2.dilate(img_canny, kernel, iterations=2)
     # img_erode = cv2.erode(img_dilate, kernel, iterations=1)
 test()
