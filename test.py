@@ -9,7 +9,7 @@ def empty(a):
     pass
 cv2.namedWindow("Parameters")
 cv2.resizeWindow("Parameters", 640, 240)
-cv2.createTrackbar("Thres1", "Parameters", 150, 255, empty)
+cv2.createTrackbar("Thres1", "Parameters", 255, 255, empty)
 cv2.createTrackbar("Thres2", "Parameters", 255, 255, empty)
 def preprocess(img):
     img_gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
@@ -73,7 +73,7 @@ def stackImages(scale, imgArray):
                     imgArray[x][y] = cv2.resize(imgArray[x][y], (0, 0), None, scale, scale)
                 else:
                     imgArray[x][y] = cv2.resize(imgArray[x][y], (imgArray[0][0].shape[1], imgArray[0][0].shape[0]), None, scale, scale)
-                if len(imgArray[x][y].shape) == 2: imgArray[x][y] = cv2.cvtColor(imgArray[x][y], cv2.COLOR_BGR2GRAY)
+                # if len(imgArray[x][y].shape) == 2: imgArray[x][y] = cv2.cvtColor(imgArray[x][y], cv2.COLOR_BGR2GRAY)
         imageBlank = np.zeros((height,  width, 3), np.uint8)
         hor = [imageBlank]*rows
         hor_con = [imageBlank]*rows
@@ -86,24 +86,48 @@ def stackImages(scale, imgArray):
                 imgArray[x] = cv2.resize(imgArray[x], (0, 0), None, scale, scale)
             else:
                 imgArray[x] = cv2.resize(imgArray[x], (imgArray[0].shape[1], imgArray[0].shape[0]), None, scale, scale)
-            if len(imgArray[x].shape) == 2: imgArray[x] = cv2.cvtColor(imgArray[x], cv2.COLOR_BGR2GRAY)
+            # if len(imgArray[x].shape) == 2: imgArray[x] = cv2.cvtColor(imgArray[x], cv2.COLOR_BGR2GRAY)
         hor = np.hstack(imgArray)
         ver = hor
     return ver
+
+def get_contours(img, imgContour):
+    # 2 main types, retr_external (extreme outer contours) and tree (retrieves all contours and reconstructs tree)
+    # CHAIN_APPROX_SIMPLE compresses values and we get a lesser number of points
+    contours, hierarchy = cv2.findContours(img, cv2.RETR_TREE, cv2.CHAIN_APPROX_TC89_L1)
+    # print(len(contours))
+
+    for cnt in contours:
+        area = cv2.contourArea(cnt)
+        if area > 2500 and area < 15507:
+            cv2.drawContours(imgContour, cnt, -1, (255, 0, 255), 7)
+
+
 def test():
-    img = cv2.imread("./colored_arrows.jpg")
-    # cv2.imshow("res", img)
-    # img_gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-    img_blur = cv2.GaussianBlur(img, (7, 7), 1)
-    thres1 = cv2.getTrackbarPos("Thres1", "Parameters")
-    thres2 = cv2.getTrackbarPos("Thres2", "Parameters")
-    img_canny = cv2.Canny(img_blur, thres1, thres2)
-    print("getting stack")
-    imgStack = stackImages(0.8, ([img, img_blur]))
-    print("got stack")
-    cv2.imshow("result.png", imgStack)
-    print("showing stack")
-    # kernel =  np.ones((3, 3))
-    # img_dilate = cv2.dilate(img_canny, kernel, iterations=2)
-    # img_erode = cv2.erode(img_dilate, kernel, iterations=1)
+    img = cv2.imread("./img/xiao.JPG")
+    img_contour = img.copy()
+
+    while True:
+        # cv2.imshow("res", img)
+        img_blur = cv2.GaussianBlur(img, (7, 7), 1)
+        img_gray = cv2.cvtColor(img_blur, cv2.COLOR_BGR2GRAY)
+        thres1 = cv2.getTrackbarPos("Thres1", "Parameters")
+        thres2 = cv2.getTrackbarPos("Thres2", "Parameters")
+        img_canny = cv2.Canny(img_gray, thres1, thres2)
+
+        kernel = np.ones((5,5))
+        img_dil = cv2.dilate(img_canny, kernel, iterations=1)
+
+        get_contours(img_dil, img_contour)
+        # imgStack = stackImages(0.8, ([img, img_canny, img_canny]))
+        cv2.imshow("result.png", img_canny)
+        cv2.imshow("dilated", img_contour)
+        # cv2.imwrite("result.png", imgStack)
+
+        if cv2.waitKey(1) & 0xFF == ord('1'):
+            break
+
+        # kernel =  np.ones((3, 3))
+        # img_dilate = cv2.dilate(img_canny, kernel, iterations=2)
+        # img_erode = cv2.erode(img_dilate, kernel, iterations=1)
 test()
