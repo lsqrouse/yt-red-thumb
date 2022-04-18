@@ -9,8 +9,8 @@ def empty(a):
     pass
 cv2.namedWindow("Parameters")
 cv2.resizeWindow("Parameters", 640, 240)
-cv2.createTrackbar("Thres1", "Parameters", 255, 255, empty)
-cv2.createTrackbar("Thres2", "Parameters", 255, 255, empty)
+cv2.createTrackbar("Thres1", "Parameters", 140, 255, empty)
+cv2.createTrackbar("Thres2", "Parameters", 170, 255, empty)
 def preprocess(img):
     img_gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     img_blur = cv2.GaussianBlur(img_gray, (5, 5), 1)
@@ -22,6 +22,8 @@ def preprocess(img):
 def find_tip(points, convex_hull):
     length = len(points)
     indices = np.setdiff1d(range(length), convex_hull)
+    if len(indices) == 0:
+        return (0,0)
     for i in range(2):
         j = indices[i] + 2
         if j > length - 1:
@@ -29,22 +31,41 @@ def find_tip(points, convex_hull):
         if np.all(points[j] == points[indices[i - 1] - 2]):
             return tuple(points[j])
 def main():
-    mypath = './img'
+    mypath = './img/arrow/'
     onlyfiles = [f for f in listdir(mypath) if isfile(join(mypath, f))]
     arrowcount = 0
     for file in onlyfiles:
         print(str(file))
-        img = cv2.imread("./img/" + str(file))
+        img = cv2.imread(mypath + str(file))
+        # img = cv2.imread
+        # read image
+
+        # remove everything other than red from iamge
+        img = cv2.resize(img, (1280, 720))
+        img_red = np.copy(img)
+        img_red[(img_red[:, :, 0] > 50) | (img_red[:, :, 1] > 50) | (img_red[:, :, 2] < 90)] = 0
+        # ihstack((cv2.resize(img, (650, 500)), cv2.resize(img_copy, (650, 500))))
+        img = img_red
+
         foundarrow = False
-        contours, hierarchy = cv2.findContours(preprocess(img), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
+
+        contours, hierarchy = cv2.findContours(preprocess(img), cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
         print("found contours")
+        i = 0
         for cnt in contours:
-            print("processing countour")
+            area = cv2.contourArea(cnt)
+            if area < 1000:
+                continue
+            print("processing countour" + str(i))
+            i += 1
             peri = cv2.arcLength(cnt, True)
             approx = cv2.approxPolyDP(cnt, 0.025 * peri, True)
             hull = cv2.convexHull(approx, returnPoints=False)
             sides = len(hull)
-            print(str(sides) + " is ides, length of approx is " + str(len(approx)))
+            print(str(sides) + " is ides, length of approx is " + str(len(approx)) + "in " + str(file))
+            cv2.drawContours(img, [cnt], -1, (0, 255, 0), 3)
+
+
             if sides == 4 and len(approx) == 4:
                 arrowcount += 1
             if 6 > sides > 3 and sides + 2 == len(approx):
@@ -99,12 +120,36 @@ def get_contours(img, imgContour):
 
     for cnt in contours:
         area = cv2.contourArea(cnt)
-        if area > 2500 and area < 15507:
+        if area > 1000:
             cv2.drawContours(imgContour, cnt, -1, (255, 0, 255), 7)
+            # true means contour is closed
+            #use this parameter to approxiamte a shape
+            peri = cv2.arcLength(cnt, True)
+            approx = cv2.approxPolyDP(cnt, 0.2 * peri, True)
+            hull = cv2.convexHull(approx, returnPoints=False)
+            print(len(approx))
+            x, y, w, h = cv2.boundingRect(approx)
+            cv2.rectangle(imgContour, (x, y), (x+w, y+h), (0,255,0), 5)
+
+            cv2.putText(imgContour, "Points: " + str(len(approx)), (x + w + 20, y + 20), cv2.FONT_HERSHEY_COMPLEX, .7, (0,255,0), 2)
+            cv2.putText(imgContour, "Area: " + str(int(area)), (x + w + 20, y + 45), cv2.FONT_HERSHEY_COMPLEX, .7, (0,255,0), 2)
+            cv2.putText(imgContour, "Hull: " + str(len(hull)), (x + w + 20, y + 70), cv2.FONT_HERSHEY_COMPLEX, .7, (0,255,0), 2)
+
+    print("found " + str(len(contours)))
 
 
 def test():
-    img = cv2.imread("./img/xiao.JPG")
+
+    #read image
+    img = cv2.imread("img/arrow/keralis.JPG")
+
+    #remove everything other than red from iamge
+    img = cv2.resize(img, (1280, 720))
+    img_red = np.copy(img)
+    img_red[(img_red[:, :, 0] > 50) | (img_red[:, :, 1] > 50) | (img_red[:, :, 2] < 90)] = 0
+    #ihstack((cv2.resize(img, (650, 500)), cv2.resize(img_copy, (650, 500))))
+    img = img_red
+
     img_contour = img.copy()
 
     while True:
@@ -130,4 +175,5 @@ def test():
         # kernel =  np.ones((3, 3))
         # img_dilate = cv2.dilate(img_canny, kernel, iterations=2)
         # img_erode = cv2.erode(img_dilate, kernel, iterations=1)
-test()
+main()
+# test()
