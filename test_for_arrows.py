@@ -3,14 +3,9 @@ import numpy as np
 import time
 from os import listdir
 from os.path import isfile, join
-framewidth = 640
-frameHeight = 480
-def empty(a):
-    pass
-# cv2.namedWindow("Parameters")
-# cv2.resizeWindow("Parameters", 640, 240)
-# cv2.createTrackbar("Thres1", "Parameters", 150, 255, empty)
-# cv2.createTrackbar("Thres2", "Parameters", 255, 255, empty)
+
+write = False
+
 def preprocess(img):
     img_gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     img_blur = cv2.GaussianBlur(img_gray, (5, 5), 1)
@@ -65,56 +60,12 @@ def main():
             arrowcount += 1
         else:
             f.write(str(file) + " sides: " + str(sides) + " len of approx: " + str(len(approx)) +  '\n')
-            cv2.imwrite("./out/image-" + str(file) + ".png", img)
+            if write:
+                cv2.imwrite("./out/image-" + str(file) + ".png", img)
 
     perc = arrowcount * 1.0 / len(onlyfiles) * 100
     print("Found " + str(arrowcount) + " of " + str(len(onlyfiles)) + " arrows, " + str(perc) + "% success rate")
     f.close()
     cv2.waitKey(0)
-def stackImages(scale, imgArray):
-    rows = len(imgArray)
-    cols = len(imgArray[0])
-    rowsAvailable = isinstance(imgArray[0], list)
-    width = imgArray[0][0].shape[1]
-    height = imgArray[0][0].shape[0]
-    if rowsAvailable:
-        for x in range(0, rows):
-            for y in range(0, cols):
-                if imgArray[x][y].shape[:2] == imgArray[0][0].shape[:2]:
-                    imgArray[x][y] = cv2.resize(imgArray[x][y], (0, 0), None, scale, scale)
-                else:
-                    imgArray[x][y] = cv2.resize(imgArray[x][y], (imgArray[0][0].shape[1], imgArray[0][0].shape[0]), None, scale, scale)
-                if len(imgArray[x][y].shape) == 2: imgArray[x][y] = cv2.cvtColor(imgArray[x][y], cv2.COLOR_BGR2GRAY)
-        imageBlank = np.zeros((height,  width, 3), np.uint8)
-        hor = [imageBlank]*rows
-        hor_con = [imageBlank]*rows
-        for x in range(0, rows):
-            hor[x] = np.hstack(imgArray[x])
-        ver = np.vstack(hor)
-    else:
-        for x in range(0, rows):
-            if imgArray[x].shape[:2] == imgArray[0].shape[:2]:
-                imgArray[x] = cv2.resize(imgArray[x], (0, 0), None, scale, scale)
-            else:
-                imgArray[x] = cv2.resize(imgArray[x], (imgArray[0].shape[1], imgArray[0].shape[0]), None, scale, scale)
-            if len(imgArray[x].shape) == 2: imgArray[x] = cv2.cvtColor(imgArray[x], cv2.COLOR_BGR2GRAY)
-        hor = np.hstack(imgArray)
-        ver = hor
-    return ver
-def test():
-    img = cv2.imread("./colored_arrows.jpg")
-    # cv2.imshow("res", img)
-    # img_gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-    img_blur = cv2.GaussianBlur(img, (7, 7), 1)
-    thres1 = cv2.getTrackbarPos("Thres1", "Parameters")
-    thres2 = cv2.getTrackbarPos("Thres2", "Parameters")
-    img_canny = cv2.Canny(img_blur, thres1, thres2)
-    print("getting stack")
-    imgStack = stackImages(0.8, ([img, img_blur]))
-    print("got stack")
-    cv2.imshow("result.png", imgStack)
-    print("showing stack")
-    # kernel =  np.ones((3, 3))
-    # img_dilate = cv2.dilate(img_canny, kernel, iterations=2)
-    # img_erode = cv2.erode(img_dilate, kernel, iterations=1)
+
 main()
