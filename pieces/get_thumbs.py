@@ -10,6 +10,8 @@ import google_auth_oauthlib.flow
 import googleapiclient.discovery
 import googleapiclient.errors
 
+import json
+
 scopes = ["https://www.googleapis.com/auth/youtube.force-ssl"]
 
 def main():
@@ -19,7 +21,7 @@ def main():
 
     api_service_name = "youtube"
     api_version = "v3"
-    client_secrets_file = "oath_client.json"
+    client_secrets_file = "../oath_client.json"
 
     # Get credentials and create an API client
     flow = google_auth_oauthlib.flow.InstalledAppFlow.from_client_secrets_file(
@@ -39,7 +41,10 @@ def main():
         type="video"
     )
     response = request.execute()
+    videos = response["items"]
+    for video in videos:
+        thumbnail_url = video["snippet"]["thumbnails"]["high"]["url"]
+        print(thumbnail_url)
 
-    print(response)
 
 main()

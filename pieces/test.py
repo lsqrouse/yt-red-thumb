@@ -102,7 +102,7 @@ def stackImages(scale, imgArray):
         ver = hor
     return ver
 def test():
-    img = cv2.imread("./colored_arrows.jpg")
+    img = cv2.imread("colored_arrows.jpg")
     # cv2.imshow("res", img)
     # img_gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     img_blur = cv2.GaussianBlur(img, (7, 7), 1)

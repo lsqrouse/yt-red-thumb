@@ -21,7 +21,7 @@ font = cv2.FONT_HERSHEY_COMPLEX
 
 while True:
     _ = True
-    frame = cv2.imread("./img/arrow/Keralis.jpg")
+    frame = cv2.imread("../img/arrow/keralis.JPG")
     hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
 
     l_h = cv2.getTrackbarPos("L-H", "Trackbars")

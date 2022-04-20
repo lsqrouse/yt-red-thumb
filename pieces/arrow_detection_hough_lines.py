@@ -1,6 +1,6 @@
 import cv2, numpy as np, argparse
 
-img = cv2.imread("img/arrow/keralis.JPG")
+img = cv2.imread("../img/arrow/keralis.JPG")
 img = cv2.resize(img, (1280, 720))
 
 img_copy = np.copy(img)
