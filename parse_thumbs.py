@@ -8,19 +8,37 @@ import requests
 import shutil
 import cv2
 import numpy as np
+import pickle
 import time
 from os import listdir
 from os.path import isfile, join
+
+# indicates we failed to download a file
+BAD_DL = -1
 
 scopes = ["https://www.googleapis.com/auth/youtube.force-ssl"]
 api_service_name = "youtube"
 api_version = "v3"
 client_secrets_file = "oath_client.json"
 thumb_prefix = './img/to_parse/'
+dict_prefix = './dicts/'
+
 
 img_count = 0
 
 used_words = {}
+parsed_vids = {}
+
+def save_dict(dictionary,File):
+    with open(dict_prefix + File, "wb") as myFile:
+        pickle.dump(dictionary, myFile)
+        myFile.close()
+
+def load_dict(File):
+    with open(dict_prefix + File, "rb") as myFile:
+        dict = pickle.load(myFile)
+        myFile.close()
+        return dict
 
 def get_search_words():
     r = random_words.RandomWords()
@@ -79,6 +97,8 @@ def save_thumb(url):
         with open( thumb_prefix + filename, 'wb') as f:
             shutil.copyfileobj(r.raw, f)
         img_count += 1
+    else:
+        return BAD_DL
     return filename
 
 def preprocess(img):
@@ -101,18 +121,19 @@ def find_tip(points, convex_hull):
             return tuple(points[j])
 def parse_image(filename):
     print("parsing " +  str(filename))
-    img = cv2.imread(thumb_prefix + filename)
 
-    # remove everything other than red from iamge
-    img_red = np.copy(img)
+    foundarrow = False
 
     try:
+        img = cv2.imread(thumb_prefix + filename)
+
+        # remove everything other than red from iamge
+        img_red = np.copy(img)
         img_red[(img_red[:, :, 0] > 50) | (img_red[:, :, 1] > 50) | (img_red[:, :, 2] < 90)] = 0
         # ihstack((cv2.resize(img, (650, 500)), cv2.resize(img_copy, (650, 500))))
         img = img_red
 
 
-        foundarrow = False
         contours, hierarchy = cv2.findContours(preprocess(img), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
         for cnt in contours:
             peri = cv2.arcLength(cnt, True)
@@ -127,7 +148,11 @@ def parse_image(filename):
                     cv2.drawContours(img, [cnt], -1, (0, 255, 0), 3)
                     cv2.circle(img, arrow_tip, 3, (0, 0, 255), cv2.FILLED)
     except:
-        print(filename)
+        print(filename + "was bad")
+        save_dict(used_words, 'used_words.dict')
+        save_dict(parsed_vids, 'parsed_vids.dict')
+
+    parsed_vids[filename] = 1
     if foundarrow:
         return True
     return False
@@ -137,6 +162,13 @@ def parse_image(filename):
 
 def main():
     global img_count
+    global used_words
+
+    #reload the list of used words
+    if 'used_words.dict' in os.listdir('./dicts'):
+        used_words = load_dict('used_words.dict')
+    if 'parsed_vids.dict' in os.listdir('./dicts'):
+        parsed_vids = load_dict('parsed_vids.dict')
 
     # Disable OAuthlib's HTTPS verification when running locally.
     # *DO NOT* leave this option enabled in production.
@@ -154,18 +186,18 @@ def main():
     words = get_search_words()
     #get and save our new thumbnails to ./img/to_parse
     thumb_links = get_thumb_links(youtube, words)
-    print("got: ")
-    print(str(len(thumb_links)))
     thumbnails = []
 
-    #get all the files
+    # save all the images locally
     for url in thumb_links:
         filename = save_thumb(url)
-        thumbnails.append(filename)
+        if filename != BAD_DL:
+            thumbnails.append(filename)
 
     arrows = []
     idx = 0
     for filename in thumbnails:
+        # save this video_id as parsed
         if parse_image(str(filename)):
             # save the filename and the idx so we can get the url it game with
             arrows.append(filename)
@@ -179,6 +211,10 @@ def main():
     for filename in arrows:
         f.write(filename + "\n")
     f.close()
+
+    #update our dictionaries
+    save_dict(used_words, 'used_words.dict')
+    save_dict(parsed_vids, 'parsed_vids.dict')
 
 
 main()

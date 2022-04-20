@@ -28,7 +28,7 @@ def main():
     mypath = './img/arrow/'
     onlyfiles = [f for f in listdir(mypath) if isfile(join(mypath, f))]
     arrowcount = 0
-    f = open("pieces/fails.txt", "w")
+    f = open("fails.txt", "w")
     for file in onlyfiles:
         print(str(file))
         img = cv2.imread(mypath + str(file))
