@@ -66,8 +66,7 @@ def get_thumb_links(youtube, words):
             q = word,
             maxResults=50,
             order="searchSortUnspecified",
-            publishedAfter="2012-01-01T00:00:00Z",
-            publishedBefore="2012-01-02T00:00:00Z",
+            publishedBefore="2009-12-14T00:00:00Z",
             regionCode="US",
             relevanceLanguage="en",
             type="video"
@@ -202,9 +201,13 @@ def main():
             # save the filename and the idx so we can get the url it game with
             arrows.append(filename)
         else:
-            #remove the image if we didn't find an arrow
-            os.remove(thumb_prefix + filename)
-            img_count -= 1
+            try:
+                #remove the image if we didn't find an arrow
+                os.remove(thumb_prefix + filename)
+                img_count -= 1
+            except:
+                #donothing
+                print('missingfile')
         idx += 1
 
     f = open('arrows.txt', 'w')
